@@ -68,7 +68,7 @@ public class LoginController {
             // 4. HttpResponse<String> response : 1번을 통해 서버로부터 받은 응답을 HttpResponse 객체로 반환
 
             // 서버의 응답 코드 확인
-            if(response.statusCode() == 200){   // 200 = 성공을 의미
+            if(response.statusCode() == 200){   // 200 = 성공을 의미, 401 = 인증 실패, 500 = 서버 오류
                 System.out.println("로그인 성공");
             }
             else{
