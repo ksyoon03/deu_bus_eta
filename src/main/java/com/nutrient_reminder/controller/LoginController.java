@@ -23,6 +23,7 @@ import javafx.stage.Stage;
 import java.util.Objects;
 import java.io.IOException;
 
+import com.nutrient_reminder.service.UserSession;
 
 public class LoginController {
     @FXML
@@ -78,7 +79,7 @@ public class LoginController {
             if(response.statusCode() == 200){   // 200 = 성공을 의미, 401 = 인증 실패, 500 = 서버 오류
                 System.out.println("로그인 성공");
 
-                // 영양제 추천 페이지로 이동
+                /*// 영양제 추천 페이지로 이동
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/nutrient_reminder/view/nutrient-check.fxml"));
                 Parent root = loader.load();
 
@@ -86,7 +87,22 @@ public class LoginController {
                 controller.setUsername(username);
 
                 Stage stage = (Stage) idField.getScene().getWindow();
-                stage.setScene(new Scene(root, 750, 600));
+                stage.setScene(new Scene(root, 750, 600));*/
+
+                //UserSession에 아이디 저장!
+                UserSession.setUserId(username);
+
+                // 이동할 화면을 'main.fxml'로 변경
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/nutrient_reminder/view/main.fxml"));
+                Parent root = loader.load();
+
+                // 화면 전환 및 창 제목 설정
+                Stage stage = (Stage) idField.getScene().getWindow();
+                stage.setScene(new Scene(root));
+                stage.setTitle("영양제 알리미");   // !!! [수정] 창 제목을 명확하게 변경
+                stage.show();
+
+
             }
             else{
                 System.out.println("로그인 실패" + response.body());

@@ -39,7 +39,8 @@
                     <Font size="16.0" />
                 </font>
             </Button>
-            <Button fx:id="recommendTabButton" mnemonicParsing="false" style="-fx-background-color: transparent; -fx-font-weight: bold; -fx-cursor: hand;" text="영양제 추천" textFill="#999999">
+
+            <Button fx:id="recommendTabButton" mnemonicParsing="false" onAction="#handleRecommendTab" style="-fx-background-color: transparent; -fx-font-weight: bold; -fx-cursor: hand;" text="영양제 추천" textFill="#999999">
                 <font>
                     <Font size="16.0" />
                 </font>

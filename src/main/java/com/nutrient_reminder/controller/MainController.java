@@ -58,6 +58,27 @@ public class MainController {
             e.printStackTrace();
         }
     }
+    @FXML
+    //
+    private void handleRecommendTab() {
+        System.out.println("영양제 추천 탭 클릭됨");
+        try {
+
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/nutrient_reminder/view/nutrient-check.fxml")
+            );
+            Parent root = loader.load();
+
+            // 현재 창을 가져와서 화면 교체
+            Stage stage = (Stage) recommendTabButton.getScene().getWindow();
+            stage.setScene(new Scene(root));
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("영양제 추천 화면으로 이동 실패");
+        }
+    }
 
     // 알람 팝업 띄우기
     @FXML
