@@ -97,7 +97,7 @@ public class SupplementRecommenderModel {
 
                 // String.format을 사용하여 최종 출력 형식(성분명, 예시, 참고 사항)으로 문자열을 생성합니다.
                 String result = String.format(
-                        "⭐ %s%n   - 추천 제품 예시: %s%n   - 참고 사항: %s%n",
+                        "%s%n   - 추천 제품 예시: %s%n   - 참고 사항: %s%n",
                         nutrient, details[0], details[1]
                 );
                 finalRecommendations.add(result);
@@ -116,6 +116,7 @@ public class SupplementRecommenderModel {
         return new ArrayList<>(YOUNG_YANG.keySet());
     }
 }
+
 
 
 
