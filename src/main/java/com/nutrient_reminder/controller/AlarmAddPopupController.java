@@ -1,9 +1,10 @@
 package com.nutrient_reminder.controller;
 
-import com.nutrient_reminder.model.Nutrient;
-import com.nutrient_reminder.service.NutrientRepository;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
 import javafx.stage.Stage;
 
 import java.time.LocalTime;
@@ -51,26 +52,14 @@ public class AlarmAddPopupController {
         if (friToggle.isSelected()) days.add("금");
         if (satToggle.isSelected()) days.add("토");
 
-        try {
-            Nutrient newNutrient = new Nutrient(name, timeLabel.getText(), days);
-            NutrientRepository repository = new NutrientRepository();
-            repository.save(newNutrient);
+        // (확인용) 콘솔 출력
+        System.out.println("=== 알람 저장 ===");
+        System.out.println("약 이름: " + name);
+        System.out.println("시간: " + timeLabel.getText());
+        System.out.println("요일: " + days);
 
-            showAlert("저장 완료", name + " 알림이 등록되었습니다!");
-
-            Stage stage = (Stage) saveButton.getScene().getWindow();
-            stage.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("저장 실패", "오류가 발생했습니다.");
-        }
-    }
-
-    private void showAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        // 팝업 닫기
+        Stage stage = (Stage) saveButton.getScene().getWindow();
+        stage.close();
     }
 }
