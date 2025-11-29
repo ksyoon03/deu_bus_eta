@@ -14,7 +14,7 @@
 <!-- 1. 최상위 컨테이너: 전체 배경 (CSS 연결됨) -->
 <!-- stylesheets 경로가 'style-sheets' 폴더 안에 있음을 반영했습니다 -->
 <StackPane prefHeight="600.0" prefWidth="800.0"
-           stylesheets="@style-sheets/login-signup.css"
+           stylesheets="@style-sheets/login-signup.css, @style-sheets/font.css"
            xmlns="http://javafx.com/javafx/17.0.6"
            xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.nutrient_reminder.controller.SignupController">
