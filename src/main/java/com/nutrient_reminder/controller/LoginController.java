@@ -79,32 +79,21 @@ public class LoginController {
             if(response.statusCode() == 200){   // 200 = 성공을 의미, 401 = 인증 실패, 500 = 서버 오류
                 System.out.println("로그인 성공");
 
-                /*// 영양제 추천 페이지로 이동
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/nutrient_reminder/view/nutrient-check.fxml"));
-                Parent root = loader.load();
-
-                NutrientCheckController controller = loader.getController();
-                controller.setUsername(username);
-
-                Stage stage = (Stage) idField.getScene().getWindow();
-                stage.setScene(new Scene(root, 750, 600));*/
-
                 //UserSession에 아이디 저장!
                 UserSession.setUserId(username);
 
-                // 메인 화면 로드
+                // 이동할 화면을 'main.fxml'로 변경
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/nutrient_reminder/view/main.fxml"));
                 Parent root = loader.load();
 
-                // 현재 Scene 가져오기
+                // 전체 화면 유지
                 Scene currentScene = idField.getScene();
-
-                // Scene의 Root만 교체
                 currentScene.setRoot(root);
 
-                // 타이틀 변경
                 Stage stage = (Stage) currentScene.getWindow();
                 stage.setTitle("영양제 알리미");
+
+
             }
             else{
                 System.out.println("로그인 실패" + response.body());
@@ -138,14 +127,18 @@ public class LoginController {
     //++ 회원가입 하이퍼링크 추가
     @FXML
     private void goToSignup(ActionEvent e) throws IOException {
-        // 회원가입 화면(뷰) 로드
+        // 회원가입 화면 로드
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/com/nutrient_reminder/view/signup.fxml")));
+
         // 현재 버튼이 있는 Scene을 가져옴
         Scene currentScene = ((Node) e.getSource()).getScene();
-        // Scene의 내용물(Root)만 교체 (창 크기, 전체화면 상태 유지됨)
+
+        // Scene의 내용물만 교체
         currentScene.setRoot(root);
 
+        // 타이틀 변경
         Stage stage = (Stage) currentScene.getWindow();
         stage.setTitle("회원가입");
     }
+
 }

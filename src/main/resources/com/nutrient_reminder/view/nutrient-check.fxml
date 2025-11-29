@@ -14,7 +14,7 @@
 <AnchorPane prefHeight="600.0" prefWidth="800.0" style="-fx-background-color: white;"
             xmlns="http://javafx.com/javafx/17.0.6" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.nutrient_reminder.controller.NutrientCheckController"
-            stylesheets="@buttonStyle.css">
+            stylesheets="@style-sheets/recommendButton.css, @style-sheets/font.css">
 
     <VBox layoutX="0.0" layoutY="0.0" prefWidth="800.0" AnchorPane.leftAnchor="0.0"
           AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
@@ -61,6 +61,7 @@
                     <Font size="16.0" />
                 </font>
             </Button>
+
         </HBox>
 
         <Separator prefHeight="3.0" prefWidth="556.0" />

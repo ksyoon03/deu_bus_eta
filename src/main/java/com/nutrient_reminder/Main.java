@@ -21,8 +21,8 @@ public class Main extends Application {
         // 불러온 파일로부터 로드한 UI 요소들을 담는 객체 생성, 가로 450px, 세로 350px
         stage.setTitle("영양제 알리미"); // 프로그램 제목
         stage.setScene(scene); // 로그인 화면 구성
-        stage.setMaximized(true); // 전체 화면 설정
-        stage.show();   // 로그인 화면 출력
+        stage.setMaximized(true);
+        stage.show();
     }
 
     public static void main(String[] args) {
