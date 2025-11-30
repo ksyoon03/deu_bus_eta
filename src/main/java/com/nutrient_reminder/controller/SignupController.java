@@ -10,14 +10,15 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class SignupController {
-
 
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
@@ -26,13 +27,13 @@ public class SignupController {
     @FXML private Label hintLabel;
 
 
-    //HTTP 통신 클라이언트 설정
+    // HTTP 통신 클라이언트 설정
     private final HttpClient http = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
             .build();
 
 
-    //상수 정의
+    // 상수 정의
     private static final String BASE_URL = "http://localhost:8080";   // 서버 주소
     private static final Pattern USERNAME_RULE = Pattern.compile("^[a-zA-Z0-9]{4,20}$"); // 아이디 정규식
     private static final int PW_MIN = 8;   // 비밀번호 최소 길이
@@ -75,7 +76,7 @@ public class SignupController {
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
-        // 4버튼 비활성화 후 비동기 요청 전송
+        // 버튼 비활성화 후 비동기 요청 전송
         setBusy(true);
         http.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .whenComplete((resp, throwable) -> {
@@ -117,22 +118,30 @@ public class SignupController {
                 });
     }
 
-    // ++ 로그인 화면으로 이동
+    // ++ 로그인 화면으로 이동 (Stage 교체 방식)
     private void navigateToLogin() {
-
         try {
             Parent root = FXMLLoader.load(
-                    getClass().getResource("/com/nutrient_reminder/view/login-view.fxml"));
+                    Objects.requireNonNull(
+                            getClass().getResource("/com/nutrient_reminder/view/login-view.fxml")
+                    )
+            );
 
+            // 현재 창(Stage)을 가져와 화면 전환
             Stage stage = (Stage) usernameField.getScene().getWindow();
+
+            // 새 Scene 설정 및 타이틀 변경
             stage.setScene(new Scene(root));
             stage.setTitle("로그인");
-            stage.show(); // 새 화면 표시
+
+            // 화면 표시
+            stage.show();
         } catch (Exception ex) {
             ex.printStackTrace();
             showAlert(Alert.AlertType.ERROR, "화면 전환 오류", "로그인 화면으로 이동할 수 없습니다.");
         }
     }
+
 
     // 전송 중 버튼 비활성화
     private void setBusy(boolean busy) {
@@ -208,6 +217,5 @@ public class SignupController {
             ex.printStackTrace();
         }
     }
-
 
 }
