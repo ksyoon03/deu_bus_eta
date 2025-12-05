@@ -1,0 +1,24 @@
+[
+  {
+    "id": "alarm_1764950393835",
+    "userId": "kimna050404",
+    "name": "sdf",
+    "time": "오전 1 : 10",
+    "days": [
+      "금"
+    ],
+    "status": "ACTIVE",
+    "lastTakenDate": ""
+  },
+  {
+    "id": "alarm_1764950410853",
+    "userId": "kimna050404",
+    "name": "sdf",
+    "time": "오전 01 : 10",
+    "days": [
+      "토"
+    ],
+    "status": "ACTIVE",
+    "lastTakenDate": ""
+  }
+]
