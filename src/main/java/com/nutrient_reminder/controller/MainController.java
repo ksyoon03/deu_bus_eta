@@ -74,26 +74,22 @@ public class MainController implements AlarmAddPopupController.AlarmSaveListener
         loadAlarms();
     }
 
-    // [디자인 제안 버전] 상태별 색상 변경 및 메시지 표시
+    // 💡 [수정] 상태별 디자인 분기 및 버튼 메시지 표시 로직 통합
     public void addAlarmToUI(String dateText, String timeText, String pillName, String subTime, String alarmId, String status, boolean isToday, Nutrient alarmData) {
         VBox alarmBox = new VBox();
         alarmBox.setId(alarmId);
 
-        // 1. 배경 스타일: 상태에 따라 색상 변경 (흰색 / 연두색 / 노란색 / 회색)
+        // 1. 배경 스타일: 상태에 따라 색상 변경
         String boxStyle = "-fx-background-radius: 15; -fx-border-width: 1; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 8, 0.0, 0, 2);";
 
         if (!isToday) {
-            // 오늘 아님: 연한 회색 배경
-            boxStyle += "-fx-background-color: #FAFAFA; -fx-border-color: #EEEEEE;";
+            boxStyle += "-fx-background-color: #FAFAFA; -fx-border-color: #EEEEEE;"; // 오늘 아님
         } else if ("COMPLETED".equals(status)) {
-            // 완료됨: 연한 초록색 배경
-            boxStyle += "-fx-background-color: #F1F8E9; -fx-border-color: #C5E1A5;";
+            boxStyle += "-fx-background-color: #F1F8E9; -fx-border-color: #C5E1A5;"; // 완료됨
         } else if ("SNOOZED".equals(status)) {
-            // 스누즈됨: 연한 노란색 배경 (강조)
-            boxStyle += "-fx-background-color: #FFFDE7; -fx-border-color: #FFF59D;";
+            boxStyle += "-fx-background-color: #FFFDE7; -fx-border-color: #FFF59D;"; // 스누즈됨
         } else {
-            // 기본: 흰색 배경
-            boxStyle += "-fx-background-color: white; -fx-border-color: #DDDDDD;";
+            boxStyle += "-fx-background-color: white; -fx-border-color: #DDDDDD;"; // 기본
         }
 
         alarmBox.setStyle(boxStyle);
@@ -220,13 +216,34 @@ public class MainController implements AlarmAddPopupController.AlarmSaveListener
 
     @FXML
     private void handleLogout() {
-        // 현재 화면의 Stage 정보를 가져옴
-        Stage stage = (Stage) logoutButton.getScene().getWindow();
+        // 💡 [수정] 로그아웃 확인 경고창 추가 로직
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("로그아웃 확인");
+        alert.setHeaderText(null);
+        alert.setContentText("정말 로그아웃 하시겠습니까?");
+        Optional<ButtonType> result = alert.showAndWait();
 
-        // 헬퍼 클래스에게 로그아웃 처리를 위임
-        LogoutPopupController.handleLogout(stage);
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            System.out.println("로그아웃 버튼 클릭됨");
+            try {
+                UserSession.clear();
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/com/nutrient_reminder/view/login-view.fxml")
+                );
+                Parent root = loader.load();
+
+                Stage stage = (Stage) userNameLabel.getScene().getWindow();
+                stage.getScene().setRoot(root);
+                stage.setMaximized(true);
+                stage.setTitle("로그인");
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
+    // --- 기존 메서드 유지 ---
     @FXML private void handleRecommendTab() {
         try {
             Parent root = FXMLLoader.load(getClass().getResource("/com/nutrient_reminder/view/nutrient-check.fxml"));
@@ -251,28 +268,22 @@ public class MainController implements AlarmAddPopupController.AlarmSaveListener
         } catch (IOException e) { e.printStackTrace(); }
     }
 
-    @FXML private void onHoverEnter(MouseEvent event) { ((Node)event.getSource()).setScaleX(0.98); ((Node)event.getSource()).setScaleY(0.98); }
-    @FXML private void onHoverExit(MouseEvent event) { ((Node)event.getSource()).setScaleX(1.0); ((Node)event.getSource()).setScaleY(1.0); }
-
     private void setupButtonEvents(Button btn) {
         btn.setOnMouseEntered(this::onAlarmButtonHoverEnter);
         btn.setOnMouseExited(this::onAlarmButtonHoverExit);
         btn.setOnMousePressed(this::onAlarmButtonPress);
         btn.setOnMouseReleased(this::onAlarmButtonRelease);
     }
+
+    @FXML private void onHoverEnter(MouseEvent event) { ((Node)event.getSource()).setScaleX(0.98); ((Node)event.getSource()).setScaleY(0.98); }
+    @FXML private void onHoverExit(MouseEvent event) { ((Node)event.getSource()).setScaleX(1.0); ((Node)event.getSource()).setScaleY(1.0); }
     @FXML private void onAlarmButtonHoverEnter(MouseEvent event) {
         Button button = (Button) event.getSource();
-        if (!button.isDisabled()) {
-            button.setStyle("-fx-background-color: #567889; -fx-background-radius: 10; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14px;");
-            button.setScaleX(1.02); button.setScaleY(1.02);
-        }
+        if (!button.isDisabled()) { button.setStyle("-fx-background-color: #567889; -fx-background-radius: 10; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14px;"); button.setScaleX(1.02); button.setScaleY(1.02); }
     }
     @FXML private void onAlarmButtonHoverExit(MouseEvent event) {
         Button button = (Button) event.getSource();
-        if (!button.isDisabled()) {
-            button.setStyle("-fx-background-color: #E8F5FF; -fx-background-radius: 10; -fx-text-fill: #567889; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14px;");
-            button.setScaleX(1.0); button.setScaleY(1.0);
-        }
+        if (!button.isDisabled()) { button.setStyle("-fx-background-color: #E8F5FF; -fx-background-radius: 10; -fx-text-fill: #567889; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14px;"); button.setScaleX(1.0); button.setScaleY(1.0); }
     }
     @FXML private void onAlarmButtonPress(MouseEvent event) {
         Node node = (Node) event.getSource();
@@ -280,9 +291,6 @@ public class MainController implements AlarmAddPopupController.AlarmSaveListener
     }
     @FXML private void onAlarmButtonRelease(MouseEvent event) {
         Button button = (Button) event.getSource();
-        if (!button.isDisabled()) {
-            button.setStyle("-fx-background-color: #D0E8F2; -fx-background-radius: 10; -fx-text-fill: #567889; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14px;");
-            button.setScaleX(1.0); button.setScaleY(1.0);
-        }
+        if (!button.isDisabled()) { button.setStyle("-fx-background-color: #D0E8F2; -fx-background-radius: 10; -fx-text-fill: #567889; -fx-font-weight: bold; -fx-cursor: hand; -fx-font-size: 14px;"); button.setScaleX(1.0); button.setScaleY(1.0); }
     }
 }
