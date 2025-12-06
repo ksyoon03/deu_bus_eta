@@ -17,13 +17,10 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
-import java.time.Duration; // 시간 차이 계산용
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,7 +36,7 @@ public class AlarmSchedulerService {
     static {
         // [미네랄]
         CONFLICT_MAP.put("철분", List.of("칼슘", "마그네슘", "아연", "녹차", "커피", "종합비타민"));
-        CONFLICT_MAP.put("칼슘", List.of("철분", "인", "아연")); // 아연 흡수도 방해
+        CONFLICT_MAP.put("칼슘", List.of("철분", "인", "아연"));
         CONFLICT_MAP.put("아연", List.of("철분", "칼슘"));
         CONFLICT_MAP.put("마그네슘", List.of("철분"));
 
@@ -87,23 +84,15 @@ public class AlarmSchedulerService {
         return instance;
     }
 
-    // [수정됨] 충돌 감지 로직 (시간 범위 ±2분 적용)
+    // --- [기능 1] 충돌 감지 로직 ---
     public String checkConflict(String newName, String newTime) {
-
         for (Nutrient alarm : scheduledAlarms) {
-            // 1. 활성 상태인지 확인
             boolean isActive = "ACTIVE".equals(alarm.getStatus()) || "SNOOZED".equals(alarm.getStatus());
             if (!isActive) continue;
 
-            // 2. 시간 차이 검사 (±2분 이내면 충돌로 간주)
             if (isTimeConflict(newTime, alarm.getTime())) {
-                String existingName = alarm.getName();
-
-                // 3. 성분 충돌 메시지 생성
-                String message = getConflictMessage(newName, existingName);
-                if (message != null) {
-                    return message;
-                }
+                String message = getConflictMessage(newName, alarm.getName());
+                if (message != null) return message;
             }
         }
         return null;
@@ -114,21 +103,14 @@ public class AlarmSchedulerService {
         try {
             LocalTime t1 = parseTime(time1Str);
             LocalTime t2 = parseTime(time2Str);
-
-            // 두 시간의 차이(분) 절대값 계산
             long diff = Math.abs(Duration.between(t1, t2).toMinutes());
-
-            // 차이가 2분 이내면 true (0, 1, 2분 차이)
             return diff <= 2;
-        } catch (Exception e) {
-            return false; // 파싱 에러 시 충돌 아님 처리
-        }
+        } catch (Exception e) { return false; }
     }
 
     // 문자열 시간 -> LocalTime 변환기
     private LocalTime parseTime(String timeStr) {
-        // "오전 09 : 30" -> 분해
-        String[] parts = timeStr.split("[:\\s]+"); // 공백이나 콜론으로 분리
+        String[] parts = timeStr.split("[:\\s]+");
         String ampm = parts[0];
         int hour = Integer.parseInt(parts[1]);
         int minute = Integer.parseInt(parts[2]);
@@ -141,58 +123,15 @@ public class AlarmSchedulerService {
 
     // 상세 경고 메시지 생성기
     private String getConflictMessage(String name1, String name2) {
-        // 1. 칼슘 <-> 철분
-        if (hasPair(name1, name2, "칼슘", "철분")) {
-            return "🚫 [흡수 방해] '칼슘'과 '철분'은 서로 흡수를 강력하게 방해합니다.\n" +
-                    "동시 섭취를 피하고 아침/저녁으로 나눠 드세요.";
-        }
-        // 2. 칼슘 <-> 아연
-        if (hasPair(name1, name2, "칼슘", "아연")) {
-            return "⚠️ [시간차 권장] 칼슘 섭취량이 많으면 아연 흡수가 저하될 수 있습니다.\n" +
-                    "시간 간격을 두고 드시는 것이 좋습니다.";
-        }
-        // 3. 철분 <-> 아연
-        if (hasPair(name1, name2, "철분", "아연")) {
-            return "⚠️ [경쟁 관계] 철분과 아연은 흡수 경로가 같아 서로 경쟁합니다.\n" +
-                    "따로 드셔야 둘 다 효과를 볼 수 있습니다.";
-        }
-        // 4. 철분 <-> 마그네슘
-        if (hasPair(name1, name2, "철분", "ë§ˆê·¸ë„¤ìŠT")) {
-            return "⚠️ [시간차 권장] 철분은 마그네슘 흡수를 방해할 수 있습니다.\n" +
-                    "(철분: 공복, 마그네슘: 저녁 식후 권장)";
-        }
-        // 5. 철분 <-> 카페인(커피, 녹차)
-        if (hasPair(name1, name2, "철분", "커피") || hasPair(name1, name2, "철분", "녹차") || hasPair(name1, name2, "철분", "카페인")) {
-            return "🚫 [흡수 방해] 커피/녹차의 타닌 성분이 철분 흡수를 막습니다.\n" +
-                    "철분제 복용 전후 2시간은 카페인을 피하세요.";
-        }
-        // 6. 비타민A <-> 루테인
-        if (hasPair(name1, name2, "비타민", "루테인")) {
-            if (name1.contains("A") || name2.contains("A")) {
-                return "⚠️ [흡수 경쟁] 고함량 비타민A와 루테인은 성질이 비슷해\n" +
-                        "동시 섭취 시 흡수 효율이 떨어질 수 있습니다.";
-            }
-        }
-        // 7. 오메가3 <-> 키토산
-        if (hasPair(name1, name2, "오메가", "키토산")) {
-            return "⚠️ [효과 감소] 키토산은 지방(오메가3)을 흡착해 배출시킵니다.\n" +
-                    "같이 드시면 오메가3 효과가 사라집니다.";
-        }
-        // 8. 유산균 <-> 항생제
-        if (hasPair(name1, name2, "유산균", "항생") || hasPair(name1, name2, "프로바이오", "항생")) {
-            return "🚫 [균 사멸] 항생제는 유산균을 죽입니다.\n" +
-                    "항생제 복용 후 최소 2~3시간 뒤에 유산균을 드세요.";
-        }
-        // 9. 테아닌 <-> 카페인
-        if (hasPair(name1, name2, "테아닌", "커피") || hasPair(name1, name2, "테아닌", "카페인")) {
-            return "⚠️ [길항 작용] 카페인은 테아닌의 진정 효과를 방해합니다.\n" +
-                    "같이 드시면 효과가 떨어질 수 있습니다.";
-        }
-        // 10. 가르시니아 <-> 당뇨약
-        if (hasPair(name1, name2, "가르시니아", "당뇨") || hasPair(name1, name2, "가르시니아", "인슐린")) {
-            return "🚫 [주의] 가르시니아는 혈당을 낮출 수 있어,\n" +
-                    "당뇨약과 함께 복용 시 저혈당 위험이 있습니다.";
-        }
+        String n1 = name1.toUpperCase();
+        String n2 = name2.toUpperCase();
+
+        if (hasPair(n1, n2, "칼슘", "아연")) return "칼슘 섭취량이 많으면 아연 흡수가 저하될 수 있습니다.";
+        if (hasPair(n1, n2, "철분", "칼슘")) return "철분과 칼슘은 서로 흡수를 강력하게 방해합니다.\n동시 섭취를 피하고 아침/저녁으로 나눠 드시는 것을 권장합니다.";
+        if (hasPair(n1, n2, "철분", "아연")) return "철분과 아연은 흡수 경로가 같아 서로 경쟁합니다.";
+        if (hasPair(n1, n2, "철분", "마그네슘")) return "철분은 마그네슘 흡수를 방해할 수 있습니다.\n철분은 공복일 때, 마그네슘은 저녁 식후에 드시는 것을 권장합니다.";
+        if (hasPair(n1, n2, "비타민A", "루테인")) return "고함량 비타민A와 루테인은 성질이 비슷해 동시 섭취 시 흡수 효율이 떨어질 수 있습니다.";
+        if (hasPair(n1, n2, "유산균", "비타민C")) return "유산균은 산성에 약해 비타민C와 유산균을 함께 드신다면 유산균이 장에 도달하기 전에 죽을 수도 있습니다.";
 
         return null;
     }
@@ -201,90 +140,7 @@ public class AlarmSchedulerService {
         return (name1.contains(k1) && name2.contains(k2)) || (name1.contains(k2) && name2.contains(k1));
     }
 
-    // --- 스케줄러 및 기타 로직  ---
-    private void startScheduler() {
-        scheduler.scheduleAtFixedRate(this::checkAlarmTime, 0, 1, TimeUnit.SECONDS);
-    }
-
-    private void checkAlarmTime() {
-        LocalTime now = LocalTime.now();
-        LocalDate today = LocalDate.now();
-
-        if (!today.equals(lastCheckDate)) {
-            lastCheckDate = today;
-            for (Nutrient alarm : scheduledAlarms) {
-                if (alarm.getOriginalTime() != null && !alarm.getTime().equals(alarm.getOriginalTime())) {
-                    alarm.setTime(alarm.getOriginalTime());
-                }
-                if ("COMPLETED".equals(alarm.getStatus()) || "SNOOZED".equals(alarm.getStatus())) {
-                    alarm.setStatus("ACTIVE");
-                }
-            }
-            saveAlarmsToFile();
-            notifyListeners("ALL", "DATE_CHANGED");
-        }
-
-        String ampm = now.getHour() < 12 ? "오전" : "오후";
-        int hour = now.getHour() % 12;
-        if (hour == 0) hour = 12;
-        String currentTimeStr = String.format("%s %02d : %02d", ampm, hour, now.getMinute());
-
-        String currentUserId = UserSession.getUserId();
-        if (currentUserId == null) return;
-
-        for (Nutrient alarm : scheduledAlarms) {
-            if (!currentUserId.equals(alarm.getUserId())) continue;
-            if (!today.toString().equals(alarm.getLastTakenDate()) && "COMPLETED".equals(alarm.getStatus())) {
-                alarm.setStatus("ACTIVE");
-            }
-            boolean isTodayAlarm = alarm.getDays().isEmpty() || alarm.getDays().contains(getTodayKorean());
-            boolean isTriggerState = "ACTIVE".equals(alarm.getStatus()) || "SNOOZED".equals(alarm.getStatus());
-
-            if (alarm.getTime().equals(currentTimeStr) && isTriggerState && isTodayAlarm) {
-                if (now.getSecond() == 0) {
-                    Platform.runLater(() -> showAlarmPopup(alarm));
-                }
-            }
-        }
-    }
-
-    public String getTodayKorean() {
-        DayOfWeek day = LocalDate.now().getDayOfWeek();
-        switch (day) {
-            case MONDAY: return "월";
-            case TUESDAY: return "화";
-            case WEDNESDAY: return "수";
-            case THURSDAY: return "목";
-            case FRIDAY: return "금";
-            case SATURDAY: return "토";
-            case SUNDAY: return "일";
-            default: return "";
-        }
-    }
-
-    private void showAlarmPopup(Nutrient alarm) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/nutrient_reminder/view/alarmTriggerPopup.fxml"));
-            Parent root = loader.load();
-            AlarmTriggerController controller = loader.getController();
-            controller.setAlarmInfo(alarm.getTime(), alarm.getName(), alarm.getId());
-            Stage stage = new Stage();
-            stage.initStyle(StageStyle.UTILITY);
-            stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setTitle("알람");
-            stage.setScene(new Scene(root));
-            stage.setAlwaysOnTop(true);
-            stage.show();
-        } catch (IOException e) { e.printStackTrace(); }
-    }
-
-    public Nutrient registerAlarm(String userId, String name, String time, List<String> days, String alarmId) {
-        if (alarmId == null) alarmId = "alarm_" + System.currentTimeMillis();
-        Nutrient newAlarm = new Nutrient(alarmId, userId, name, time, days, "ACTIVE");
-        scheduledAlarms.add(newAlarm);
-        saveAlarmsToFile();
-        return newAlarm;
-    }
+    // -- CRUD 및 상태 변경 로직 ---
 
     public void updateAlarm(Nutrient updated) {
         for (int i = 0; i < scheduledAlarms.size(); i++) {
@@ -323,6 +179,82 @@ public class AlarmSchedulerService {
         notifyListeners(alarmId, status);
     }
 
+    // --- 스케줄러 및 알람 그룹화 로직 ---
+
+    private void startScheduler() {
+        scheduler.scheduleAtFixedRate(this::checkAlarmTime, 0, 1, TimeUnit.SECONDS);
+    }
+
+    private void checkAlarmTime() {
+        LocalTime now = LocalTime.now();
+        LocalDate today = LocalDate.now();
+
+        // 1. 자정 초기화 로직
+        if (!today.equals(lastCheckDate)) {
+            lastCheckDate = today;
+            for (Nutrient alarm : scheduledAlarms) {
+                if (alarm.getOriginalTime() != null && !alarm.getTime().equals(alarm.getOriginalTime())) {
+                    alarm.setTime(alarm.getOriginalTime());
+                }
+                if ("COMPLETED".equals(alarm.getStatus()) || "SNOOZED".equals(alarm.getStatus())) {
+                    alarm.setStatus("ACTIVE");
+                }
+            }
+            saveAlarmsToFile();
+            notifyListeners("ALL", "DATE_CHANGED");
+        }
+
+        String ampm = now.getHour() < 12 ? "오전" : "오후";
+        int hour = now.getHour() % 12;
+        if (hour == 0) hour = 12;
+        String currentTimeStr = String.format("%s %02d : %02d", ampm, hour, now.getMinute());
+
+        String currentUserId = UserSession.getUserId();
+        if (currentUserId == null) return;
+
+        // 2. 현재 시간에 울릴 알람 그룹 수집
+        List<Nutrient> alarmsToTrigger = new ArrayList<>();
+
+        for (Nutrient alarm : scheduledAlarms) {
+            if (!currentUserId.equals(alarm.getUserId())) continue;
+
+            boolean isTodayAlarm = alarm.getDays().isEmpty() || alarm.getDays().contains(getTodayKorean());
+            boolean isTriggerState = "ACTIVE".equals(alarm.getStatus()) || "SNOOZED".equals(alarm.getStatus());
+
+            if (alarm.getTime().equals(currentTimeStr) && isTriggerState && isTodayAlarm) {
+                if (now.getSecond() == 0) {
+                    alarmsToTrigger.add(alarm);
+                }
+            }
+        }
+
+        // 3. 알람 그룹이 있다면, 팝업에 리스트를 전달
+        if (!alarmsToTrigger.isEmpty()) {
+            Platform.runLater(() -> showAlarmGroupPopup(alarmsToTrigger));
+        }
+    }
+
+    private void showAlarmGroupPopup(List<Nutrient> alarmGroup) {
+        if (alarmGroup.isEmpty()) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/nutrient_reminder/view/alarmTriggerPopup.fxml"));
+            Parent root = loader.load();
+
+            AlarmTriggerController controller = loader.getController();
+            controller.setAlarmGroupInfo(alarmGroup);
+
+            Stage stage = new Stage();
+            stage.initStyle(StageStyle.UTILITY);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("알람");
+            stage.setScene(new Scene(root));
+            stage.setAlwaysOnTop(true);
+            stage.show();
+
+        } catch (IOException e) { e.printStackTrace(); }
+    }
+
+    // 스누즈 헬퍼
     private String add30Minutes(String timeStr) {
         try {
             LocalTime time = parseTime(timeStr).plusMinutes(30);
@@ -333,6 +265,15 @@ public class AlarmSchedulerService {
         } catch (Exception e) { return timeStr; }
     }
 
+    public String getTodayKorean() {
+        DayOfWeek day = LocalDate.now().getDayOfWeek();
+        switch (day) {
+            case MONDAY: return "월"; case TUESDAY: return "화"; case WEDNESDAY: return "수";
+            case THURSDAY: return "목"; case FRIDAY: return "금"; case SATURDAY: return "토";
+            case SUNDAY: return "일"; default: return "";
+        }
+    }
+
     private void notifyListeners(String alarmId, String status) {
         Platform.runLater(() -> {
             for (AlarmStatusListener listener : listeners) {
@@ -340,6 +281,20 @@ public class AlarmSchedulerService {
                 else listener.onAlarmStatusChanged(alarmId, status);
             }
         });
+    }
+
+    public void addListener(AlarmStatusListener listener) { listeners.add(listener); }
+    public List<Nutrient> getScheduledAlarms() { return scheduledAlarms; }
+
+    // ... (registerAlarm, saveAlarmsToFile, loadAlarmsFromFile 유지)
+
+    public Nutrient registerAlarm(String userId, String name, String time, List<String> days, String alarmId) {
+        if (alarmId == null) alarmId = "alarm_" + System.currentTimeMillis();
+        Nutrient newAlarm = new Nutrient(alarmId, userId, name, time, days, "ACTIVE");
+        newAlarm.setOriginalTime(time);
+        scheduledAlarms.add(newAlarm);
+        saveAlarmsToFile();
+        return newAlarm;
     }
 
     private void saveAlarmsToFile() {
@@ -363,7 +318,4 @@ public class AlarmSchedulerService {
             }
         } catch (IOException e) { e.printStackTrace(); }
     }
-
-    public void addListener(AlarmStatusListener listener) { listeners.add(listener); }
-    public List<Nutrient> getScheduledAlarms() { return scheduledAlarms; }
 }
